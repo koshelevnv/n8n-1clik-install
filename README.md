@@ -14,7 +14,7 @@
 - ✅ Проверка существующих контейнеров и volumes
 - ✅ Создание и проверка конфигурационных файлов (docker-compose.yml, .env)
 - ✅ Валидация синтаксиса Docker Compose файлов
-- ✅ Настройка автозапуска при перезагрузке сервера
+- ✅ Настройка автозапуска через systemd при перезагрузке сервера (с автоматическим пробным запуском сервиса)
 - ✅ Поддержка различных сценариев установки
 
 ## Использование
@@ -67,6 +67,19 @@ sudo systemctl start n8n
 sudo systemctl stop n8n
 sudo systemctl restart n8n
 sudo systemctl status n8n
+# Логи systemd-юнита
+sudo journalctl -u n8n -e --no-pager
+```
+
+### Автозапуск через systemd
+- Скрипт создаёт юнит: `/etc/systemd/system/n8n.service`.
+- Юнит запускает `docker compose up -d` в каталоге проекта и корректно использует абсолютный путь в `WorkingDirectory`.
+- После создания юнита скрипт выполняет `systemctl enable n8n` и сразу делает проверочный запуск `systemctl start n8n`.
+
+Переинициализация юнита после ручных правок:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart n8n
 ```
 
 ### Резервное копирование
@@ -87,6 +100,22 @@ docker run --rm -v n8n_n8n_data:/data -v $(pwd):/backup alpine tar czf /backup/n
 1. Корректность DNS записей
 2. Доступность портов 80 и 443
 3. Правильность email адреса
+
+### Сервис не стартует после перезагрузки
+Проверьте, что юнит активен и путь корректен:
+```bash
+sudo systemctl status n8n
+sudo sed -n '1,120p' /etc/systemd/system/n8n.service
+```
+В секции `[Service]` должен быть абсолютный путь:
+```
+WorkingDirectory=/ПОЛНЫЙ/ПУТЬ/К/n8n-compose
+```
+Затем перечитайте конфигурацию и запустите:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl start n8n
+```
 
 ### Ошибки Docker
 ```bash
