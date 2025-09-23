@@ -471,7 +471,7 @@ After=docker.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-WorkingDirectory=$(pwd)/$PROJECT_DIR
+WorkingDirectory=$ORIGINAL_DIR/$PROJECT_DIR
 ExecStart=/usr/bin/docker compose up -d
 ExecStop=/usr/bin/docker compose down
 TimeoutStartSec=0
@@ -482,6 +482,12 @@ EOF
 
     systemctl daemon-reload
     systemctl enable n8n
+    # Запускаем сервис сразу для проверки
+    if systemctl start n8n 2>/dev/null; then
+        print_success "Сервис n8n запущен"
+    else
+        print_warning "Не удалось автоматически запустить сервис n8n. Проверьте логи: journalctl -u n8n -e"
+    fi
 
     print_success "Автозапуск настроен"
     print_info "Сервисы будут автоматически запускаться при перезагрузке сервера"
